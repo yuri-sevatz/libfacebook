@@ -1,0 +1,14 @@
+#Ignore Build Directory
+build/
+
+#Ignore QtCreator Files
+CMakeLists.txt.user
+*.creator
+*.creator.user*
+*.files
+*.config
+*.includes
+
+.*
+!.gitignore
+
