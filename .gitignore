@@ -1,11 +1,15 @@
 #Ignore Build Directory
 build/
 
+#Ignore build configuration
+libfacebook/include/config.h
+
 #Ignore QtCreator Files
 CMakeLists.txt.user
 *.creator
 *.creator.user*
 *.files
+*.kdev4
 *.config
 *.includes
 
