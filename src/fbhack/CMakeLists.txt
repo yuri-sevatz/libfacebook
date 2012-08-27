@@ -12,7 +12,6 @@ set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 # required dependencies
 find_package(Qt4 REQUIRED)
 
-
 # add your headers and source files here
 # ---------------
 

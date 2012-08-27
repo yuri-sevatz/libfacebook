@@ -1,31 +1,16 @@
-#ifndef TOKEN_HPP
-#define TOKEN_HPP
+#ifndef LIBFACEBOOK_TOKEN_HPP
+#define LIBFACEBOOK_TOKEN_HPP
 
-#include <string>
+#include <QString>
 
 namespace facebook {
 namespace auth {
 
-class Token
-{
-public:
-    Token();
-    Token(const Token & token);
-    virtual ~Token();
-
-    bool isEmpty() const;
-
-    const std::string & value() const;
-    void setValue(const std::string & value);
-    void resetValue();
-
-    Token & operator =(const Token & rhs);
-
-private:
-    std::string key;
+struct Token {
+    QString value;
 };
 
 } /* namespace auth */
 } /* namespace facebook */
 
-#endif // TOKEN_HPP
+#endif // LIBFACEBOOK_TOKEN_HPP

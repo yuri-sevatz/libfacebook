@@ -2,7 +2,8 @@
 #define BOOTSTRAP_HPP
 
 #include <QObject>
-#include <QApplication>
+
+class QApplication;
 
 class Bootstrap : public QObject
 {

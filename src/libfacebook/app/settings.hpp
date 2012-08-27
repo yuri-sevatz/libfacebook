@@ -1,22 +1,17 @@
-#ifndef SETTINGS_HPP
-#define SETTINGS_HPP
+#ifndef LIBFACEBOOK_SETTINGS_HPP
+#define LIBFACEBOOK_SETTINGS_HPP
 
-#include <string>
+#include <QString>
 
 namespace facebook {
 namespace app {
 
-class Settings
-{
-public:
-    Settings();
-    virtual ~Settings();
-
-    std::string apiKey;
-    std::string baseUrl;
+struct Settings {
+    QString apiKey;
+    QString baseUrl;
 };
 
 } /* namespace app */
 } /* namespace facebook */
 
-#endif // SETTINGS_HPP
+#endif // LIBFACEBOOK_SETTINGS_HPP
