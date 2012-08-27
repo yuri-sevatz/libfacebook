@@ -29,7 +29,7 @@ find_package(QJSON REQUIRED)
 OPTION(INSTALL_HEADERS "Copy headers to target" OFF)
 OPTION(MORE_VERBOSE "Enable more verbose output messages" OFF)
 
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libfacebook/include/config.h.cmake ${CMAKE_SOURCE_DIR}/include/config.h)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libfacebook/include/config.h.cmake ${CMAKE_SOURCE_DIR}/libfacebook/include/config.h)
 
 # add your headers and source files here
 # ---------------
