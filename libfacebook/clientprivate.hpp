@@ -53,8 +53,7 @@ private:
     auth::Token access_token;
 };
 
-inline const auth::Token & ClientPrivate::token() const
-{
+inline const auth::Token & ClientPrivate::token() const {
     return access_token;
 }
 

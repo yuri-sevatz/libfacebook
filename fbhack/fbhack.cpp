@@ -15,17 +15,14 @@ using namespace facebook;
 
 FBHack::FBHack() :
     qtout(stdout),
-    qtin(stdin)
-{
+    qtin(stdin) {
 }
 
-FBHack::~FBHack()
-{
+FBHack::~FBHack() {
 
 }
 
-void FBHack::help(const QStringList & args)
-{
+void FBHack::help(const QStringList & args) {
     qDebug() << "Facebook OpenGraph Shell Script";
     qDebug() << "Usage:" << args.value(0);
     qDebug() << "\t-u username" << "\t" << "The user account that you wish to authenticate";
@@ -40,8 +37,7 @@ void FBHack::help(const QStringList & args)
     qDebug() << "\t" << args.value(0) << "-u me@example.com -p 12345pass -b localhost.localdomain -k 123456789012345 -r user_birthday,user_photos -o me";
 }
 
-void FBHack::main()
-{
+void FBHack::main() {
     app::Settings settings;
     auth::Credentials credentials;
     QString object;
@@ -84,8 +80,7 @@ void FBHack::main()
     qDebug() << session.get(object);
 }
 
-void FBHack::force(const QString & param, QString & target)
-{
+void FBHack::force(const QString & param, QString & target) {
     while (target.isEmpty()) {
         qtout << param;
         qtout.flush();

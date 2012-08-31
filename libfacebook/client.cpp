@@ -5,28 +5,23 @@
 namespace facebook {
 
 Client::Client() :
-    d_ptr(new ClientPrivate())
-{
+    d_ptr(new ClientPrivate()) {
 
 }
 
-Client::~Client()
-{
+Client::~Client() {
 
 }
 
-void Client::login(const app::Settings & settings, const auth::Credentials & credentials)
-{
+void Client::login(const app::Settings & settings, const auth::Credentials & credentials) {
     return d_ptr->login(settings, credentials);
 }
 
-QVariantMap Client::get(const QString & object)
-{
+QVariantMap Client::get(const QString & object) {
     return d_ptr->get(object);
 }
 
-const auth::Token & Client::token() const
-{
+const auth::Token & Client::token() const {
     return d_ptr->token();
 }
 
