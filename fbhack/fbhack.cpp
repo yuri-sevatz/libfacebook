@@ -84,10 +84,11 @@ void FBHack::main()
     qDebug() << session.get(object);
 }
 
-void FBHack::force(const QString & param, QString & target) {
+void FBHack::force(const QString & param, QString & target)
+{
     while (target.isEmpty()) {
-       qtout << param;
-       qtout.flush();
-       target = qtin.readLine();
+        qtout << param;
+        qtout.flush();
+        target = qtin.readLine();
     }
 }

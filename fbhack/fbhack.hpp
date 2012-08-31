@@ -6,8 +6,7 @@
 #include <QStringList>
 #include <QTextStream>
 
-class FBHack : public Bootstrap
-{
+class FBHack : public Bootstrap {
 public:
     FBHack();
     virtual ~FBHack();
