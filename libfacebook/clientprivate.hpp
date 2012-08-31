@@ -32,6 +32,7 @@ public:
     QVariantMap get(const QString & object);
     // void put()
 
+    auth::Token & token();
     const auth::Token & token() const;
 
 private:
@@ -52,6 +53,10 @@ private:
     auth::Credentials remoteKey;
     auth::Token access_token;
 };
+
+inline auth::Token & ClientPrivate::token() {
+    return access_token;
+}
 
 inline const auth::Token & ClientPrivate::token() const {
     return access_token;

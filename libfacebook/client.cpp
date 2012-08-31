@@ -21,6 +21,10 @@ QVariantMap Client::get(const QString & object) {
     return d_ptr->get(object);
 }
 
+auth::Token & Client::token() {
+    return d_ptr->token();
+}
+
 const auth::Token & Client::token() const {
     return d_ptr->token();
 }

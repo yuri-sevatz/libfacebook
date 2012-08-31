@@ -28,6 +28,7 @@ public:
 
     void login(const app::Settings & settings, const auth::Credentials & credentials);
     QVariantMap get(const QString & object);
+    auth::Token & token();
     const auth::Token & token() const;
 
 private:

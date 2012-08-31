@@ -29,18 +29,21 @@ void FBHack::help(const QStringList & args) {
     qDebug() << "\t-p password" << "\t" << "The password for the above user account";
     qDebug() << "\t-b baseUrl" << "\t" << "Your Facebook App's Base Domain Url";
     qDebug() << "\t-k apiKey" << "\t" << "Your Facebook App's Api Key";
+    qDebug() << "\t-t accessToken" << "\t" << "An accessToken from a previously obtained session";
     qDebug() << "\t-r permissions" << "\t" << "A comma-delimited list of opengraph permissions";
     qDebug() << "\t-o graphObj" << "\t" << "The opengraph object to return";
     qDebug() << "\t-h" << "\t\t" << "Show this help message";
     qDebug();
     qDebug() << "Example:";
     qDebug() << "\t" << args.value(0) << "-u me@example.com -p 12345pass -b localhost.localdomain -k 123456789012345 -r user_birthday,user_photos -o me";
+    qDebug() << "\t" << args.value(0) << "-t 7NadXi8PGb3t7ESkq1YkSV6HIXNGWxCQyQfwO8PTaI21RrLRE6EAgmYOXdspz8TKvzNt7HDuTRvncDFDYmuDvwYFv3ctvSyOZu9pjlnaYlSJyVns -o me";
 }
 
 void FBHack::main() {
     app::Settings settings;
     auth::Credentials credentials;
     QString object;
+    Client session;
 
     const QStringList args = QApplication::arguments();
 
@@ -58,24 +61,29 @@ void FBHack::main() {
             settings.permissions = args.value(++argi).split(QRegExp("[\\s,]+"), QString::SkipEmptyParts);
         } else if (arg == "-o") {
             object = args.value(++argi);
+        } else if (arg == "-t") {
+            session.token().value = args.value(++argi);
         } else if (arg == "-h" || arg == "-help" || arg == "--help" || arg == "/?") {
             help(args);
             return;
         }
     }
 
-    force("Username: ", credentials.login);
-    force("Password: ", credentials.pass);
-    force("BaseUrl: ", settings.baseUrl);
-    force("ApiKey: ", settings.apiKey);
+    if (session.token().value.isEmpty()) {
+        force("Username: ", credentials.login);
+        force("Password: ", credentials.pass);
+        force("BaseUrl: ", settings.baseUrl);
+        force("ApiKey: ", settings.apiKey);
+    }
+
     force("GraphObj: ", object);
 
-    Client session;
-    session.login(settings, credentials);
-
+    if (session.token().value.isEmpty()) {
+        session.login(settings, credentials);
 #ifdef VERBOSE_OUTPUT
-    qDebug() << "Auth Token: " << session.token().value;
+        qDebug() << "Auth Token: " << session.token().value;
 #endif
+    }
 
     qDebug() << session.get(object);
 }
