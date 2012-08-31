@@ -54,7 +54,7 @@ void ClientPrivate::login(const app::Settings & settings, const auth::Credential
     target.addQueryItem(QString("v"), QString("1.0"));
 
     // TODO: Replace with app::Settings fields.
-    target.addQueryItem(QString("req_params"), QString("user_birthday"));
+    target.addQueryItem(QString("req_params"), settings.permissions.join(","));
 
 #ifdef VERBOSE_OUTPUT
     qDebug() << "Loading ";

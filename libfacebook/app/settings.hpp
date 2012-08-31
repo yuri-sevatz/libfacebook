@@ -2,6 +2,7 @@
 #define LIBFACEBOOK_SETTINGS_HPP
 
 #include <QString>
+#include <QStringList>
 
 namespace facebook {
 namespace app {
@@ -9,6 +10,7 @@ namespace app {
 struct Settings {
     QString apiKey;
     QString baseUrl;
+    QStringList permissions;
 };
 
 } /* namespace app */
