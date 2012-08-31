@@ -4,7 +4,8 @@
 
 namespace facebook {
 
-Client::Client()
+Client::Client() :
+    d_ptr(new ClientPrivate())
 {
 
 }
