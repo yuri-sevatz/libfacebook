@@ -5,8 +5,7 @@
 
 class QApplication;
 
-class Bootstrap : public QObject
-{
+class Bootstrap : public QObject {
     Q_OBJECT
 public:
     Bootstrap();

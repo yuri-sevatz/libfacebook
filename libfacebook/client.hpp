@@ -10,12 +10,12 @@
 namespace facebook {
 
 namespace app {
-    struct Settings;
+struct Settings;
 }
 
 namespace auth {
-    struct Credentials;
-    struct Token;
+struct Credentials;
+struct Token;
 }
 
 class ClientPrivate;
@@ -33,7 +33,7 @@ public:
 private:
     Q_DISABLE_COPY(Client);
     Q_DECLARE_PRIVATE(Client);
-    
+
     const QScopedPointer<ClientPrivate> d_ptr;
 };
 
