@@ -23,14 +23,12 @@
 namespace facebook {
 
 ClientPrivate::ClientPrivate() :
-        frame(*page.mainFrame()),
-        state(EXPECT_NONE)
-{
+    frame(*page.mainFrame()),
+    state(EXPECT_NONE) {
 
 }
 
-ClientPrivate::~ClientPrivate()
-{
+ClientPrivate::~ClientPrivate() {
 
 }
 
@@ -38,7 +36,7 @@ void ClientPrivate::login(const app::Settings & settings, const auth::Credential
 
     access_token.value.clear();
     remoteKey = credentials;
-    
+
     QUrl target(QString("https://www.facebook.com/login.php"));
 
     target.addQueryItem(QString("api_key"), settings.apiKey);
@@ -67,7 +65,7 @@ void ClientPrivate::login(const app::Settings & settings, const auth::Credential
     do {
         QCoreApplication::processEvents();
     } while(state != EXPECT_NONE);
-    
+
     remoteKey = auth::Credentials();
 }
 
@@ -110,7 +108,7 @@ void ClientPrivate::onFormLoaded(bool result) {
     qDebug() << "Loaded Form";
     qDebug() << frame.url();
 #endif
-    
+
     if (!result) {
         changeState(EXPECT_NONE); // Send a null token;
         return;
@@ -147,7 +145,7 @@ void ClientPrivate::onLoginComplete(bool result) {
     qDebug() << "Loaded Result";
     qDebug() << frame.url();
 #endif
-        
+
     access_token.value = QJson::Parser().parse(frame.url().queryItemValue("session").toUtf8()).toMap().value("access_token").toString();
     changeState(EXPECT_NONE);
 }
@@ -165,15 +163,15 @@ QVariantMap ClientPrivate::get(const QString & object) {
 
     QNetworkRequest request;
     QNetworkAccessManager manager;
-    
+
     request.setUrl(url);
     QNetworkReply * const graphData = manager.get(request);
-    
+
     while(graphData->isRunning()) {
         QCoreApplication::processEvents();
     }
     const QVariantMap jsonMap(QJson::Parser().parse(graphData->readAll()).toMap());
-    
+
     graphData->deleteLater();
 
     return jsonMap;
