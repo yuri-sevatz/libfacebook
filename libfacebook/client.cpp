@@ -21,6 +21,18 @@ QVariantMap Client::get(const QString & object) {
     return d_ptr->get(object);
 }
 
+QVariantMap Client::post(const QString & object, const QVariantMap & data) {
+    return d_ptr->post(object, data);
+}
+
+QVariantMap Client::post(const QString & object, const QByteArray & data) {
+    return d_ptr->post(object, data);
+}
+
+QVariantMap Client::del(const QString & object) {
+    return d_ptr->del(object);
+}
+
 auth::Token & Client::token() {
     return d_ptr->token();
 }

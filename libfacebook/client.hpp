@@ -3,6 +3,7 @@
 
 #include <QObject>
 
+#include <QByteArray>
 #include <QScopedPointer>
 #include <QString>
 #include <QVariantMap>
@@ -28,6 +29,9 @@ public:
 
     void login(const app::Settings & settings, const auth::Credentials & credentials);
     QVariantMap get(const QString & object);
+    QVariantMap post(const QString & object, const QVariantMap & data);
+    QVariantMap post(const QString & object, const QByteArray & data);
+    QVariantMap del(const QString & object);
     auth::Token & token();
     const auth::Token & token() const;
 

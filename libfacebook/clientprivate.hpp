@@ -3,8 +3,13 @@
 
 #include <QObject>
 
+#include <QByteArray>
+
 #include <libfacebook/auth/credentials.hpp>
 #include <libfacebook/auth/token.hpp>
+
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
 
 #include <QVariantMap>
 #include <QWebFrame>
@@ -30,7 +35,9 @@ public:
     void login(const app::Settings & settings, const auth::Credentials & credentials);
 
     QVariantMap get(const QString & object);
-    // void put()
+    QVariantMap post(const QString & object, const QVariantMap & data);
+    QVariantMap post(const QString & object, const QByteArray & data);
+    QVariantMap del(const QString & object);
 
     auth::Token & token();
     const auth::Token & token() const;
@@ -47,8 +54,14 @@ private:
     Q_SLOT void onFormLoaded(bool result);
     Q_SLOT void onLoginComplete(bool result);
 
+    QVariantMap decode(QNetworkReply * const reply);
+    QByteArray encode(const QVariantMap & data);
+    QUrl objectUrl(const QString & object);
+
     QWebPage page;
     QWebFrame & frame;
+
+    QNetworkAccessManager manager;
 
     auth::Credentials remoteKey;
     auth::Token access_token;

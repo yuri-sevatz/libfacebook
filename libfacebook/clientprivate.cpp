@@ -16,9 +16,9 @@
 
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
-#include <QtNetwork/QNetworkAccessManager>
 
 #include <qjson/parser.h>
+#include <qjson/serializer.h>
 
 namespace facebook {
 
@@ -150,31 +150,62 @@ void ClientPrivate::onLoginComplete(bool result) {
     changeState(EXPECT_NONE);
 }
 
-QVariantMap ClientPrivate::get(const QString & object) {
+QUrl ClientPrivate::objectUrl(const QString & object) {
     QUrl url;
     url.setScheme("https");
     url.setHost("graph.facebook.com");
     url.setPath(object);
     url.setQueryItems(QList<QPair<QString, QString> >() << qMakePair<QString, QString>(QString("access_token"), access_token.value));
-#ifdef VERBOSE_OUTPUT
-    qDebug() << "Fetching";
-    qDebug() << url;
-#endif
+    return url;
+}
 
-    QNetworkRequest request;
-    QNetworkAccessManager manager;
-
-    request.setUrl(url);
-    QNetworkReply * const graphData = manager.get(request);
-
-    while(graphData->isRunning()) {
+inline QVariantMap ClientPrivate::decode(QNetworkReply * const reply) {
+    while(reply->isRunning()) {
         QCoreApplication::processEvents();
     }
-    const QVariantMap jsonMap(QJson::Parser().parse(graphData->readAll()).toMap());
+    return QJson::Parser().parse(reply->readAll()).toMap();
+}
 
-    graphData->deleteLater();
+inline QByteArray ClientPrivate::encode(const QVariantMap & data) {
+    return QJson::Serializer().serialize(data);
+}
 
-    return jsonMap;
+QVariantMap ClientPrivate::get(const QString & object) {
+
+    QNetworkRequest request;
+    request.setUrl(objectUrl(object));
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "GET" << request.url();
+#endif
+
+    return decode(QScopedPointer<QNetworkReply>(manager.get(request)).data());
+}
+
+QVariantMap ClientPrivate::post(const QString & object, const QVariantMap & data) {
+    return post(object, encode(data));
+}
+
+QVariantMap ClientPrivate::post(const QString & object, const QByteArray & data) {
+    QNetworkRequest request;
+    request.setUrl(objectUrl(object));
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "POST" << request.url();
+#endif
+
+    return decode(QScopedPointer<QNetworkReply>(manager.post(request, data)).data());
+}
+
+QVariantMap ClientPrivate::del(const QString & object) {
+    QNetworkRequest request;
+    request.setUrl(objectUrl(object));
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "DELETE" << request.url();
+#endif
+
+    return decode(QScopedPointer<QNetworkReply>(manager.deleteResource(request)).data());
 }
 
 }
