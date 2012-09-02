@@ -15,6 +15,7 @@ using namespace facebook;
 
 enum Method {
     LOGIN,
+    LOGOUT,
     GET,
     POST,
     DELETE
@@ -32,7 +33,7 @@ FBHack::~FBHack() {
 void FBHack::help(const QStringList & args) {
     qDebug() << "Facebook OpenGraph Shell Script";
     qDebug() << "Usage:" << args.value(0);
-    qDebug() << "\t-m method" << "\t" << "One of {login, get, post, delete} - (Default is login)";
+    qDebug() << "\t-m method" << "\t" << "{login, logout, get, post, delete} - (Default: login)";
     qDebug() << "";
     qDebug() << "\t-u username" << "\t" << "Account  - (Required if no accessToken)";
     qDebug() << "\t-p password" << "\t" << "Password - (Required if no accessToken; omit = stdin)";
@@ -73,6 +74,8 @@ void FBHack::main() {
             const QString methodStr = args.value(++argi);
             if (methodStr.compare("login", Qt::CaseInsensitive) == 0) {
                 method = LOGIN;
+            } else if (methodStr.compare("logout", Qt::CaseInsensitive) == 0) {
+                method = LOGOUT;
             } else if (methodStr.compare("get", Qt::CaseInsensitive) == 0) {
                 method = GET;
             } else if (methodStr.compare("post", Qt::CaseInsensitive) == 0) {
@@ -115,32 +118,45 @@ void FBHack::main() {
         }
     }
 
-    if (method != LOGIN) {
+    switch(method) {
+    case GET:
+    case POST:
+    case DELETE:
         if (object.isEmpty()) {
             qDebug() << "Please supply a graphObj (-o)";
             return;
         }
+    case LOGIN:
+    case LOGOUT:
+        if (session.token().value.isEmpty()) {
+            force("Password: ", credentials.pass);
+            session.login(settings, credentials);
+        }
     }
 
-    if (session.token().value.isEmpty()) {
-        force("Password: ", credentials.pass);
-        session.login(settings, credentials);
+    if (method == LOGOUT) {
+        session.logout(settings);
     }
 
     switch(method) {
     case LOGIN:
-        qDebug() << "Token:" << session.token().value;
+        qtout << "Token: " << session.token().value << "\n";
+        break;
+    case LOGOUT:
+        qtout << "Logout Complete\n";
         break;
     case GET:
-        qDebug() << session.get(object);
+        printValue(session.get(object));
         break;
     case POST:
-        qDebug() << session.post(object, data);
+        printValue(session.post(object, data));
         break;
     case DELETE:
-        qDebug() << session.del(object);
+        printValue(session.del(object));
         break;
     }
+    qtout << "\n";
+    qtout.flush();
 }
 
 void FBHack::force(const QString & param, QString & target) {
@@ -148,5 +164,49 @@ void FBHack::force(const QString & param, QString & target) {
         qtout << param;
         qtout.flush();
         target = qtin.readLine();
+    }
+}
+
+void FBHack::indent(size_t indent) {
+    for (size_t i = 0; i != indent; i++) {
+        qtout << "    ";
+    }
+}
+
+void FBHack::printList(const QVariantList & list, size_t depth) {
+    qtout << "[\n";
+    const size_t bodyDepth = depth + 1;
+    for(QVariantList::const_iterator iter = list.constBegin(); iter != list.constEnd(); ++iter) {
+        indent(bodyDepth);
+        printValue(*iter, bodyDepth);
+        qtout << ",\n";
+    }
+    indent(depth);
+    qtout << "]";
+}
+
+void FBHack::printMap(const QVariantMap & map, size_t depth) {
+    qtout << "{\n";
+    const size_t bodyDepth = depth + 1;
+    for(QVariantMap::const_iterator iter = map.constBegin(); iter != map.constEnd(); ++iter) {
+        indent(bodyDepth);
+        qtout << iter.key() << ": ";
+        printValue(*iter, bodyDepth);
+        qtout << "\n";
+    }
+    indent(depth);
+    qtout << "}";
+}
+
+void FBHack::printValue(const QVariant & value, size_t depth) {
+    switch(value.type()) {
+    case QVariant::Map:
+        printMap(value.toMap(), depth);
+        break;
+    case QVariant::List:
+        printList(value.toList(), depth);
+        break;
+    default:
+        qtout << value.toString();
     }
 }

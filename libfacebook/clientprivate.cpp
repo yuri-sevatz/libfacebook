@@ -69,9 +69,28 @@ void ClientPrivate::login(const app::Settings & settings, const auth::Credential
     remoteKey = auth::Credentials();
 }
 
+void ClientPrivate::logout(const app::Settings & settings) {
+    QUrl target(QString("https://www.facebook.com/logout.php"));
+
+    target.addQueryItem(QString("next"), settings.baseUrl);
+    target.addQueryItem(QString("access_token"), access_token.value);
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Loading ";
+    qDebug() << target;
+#endif
+
+    changeState(EXPECT_QUIT);
+    frame.load(target);
+
+    do {
+        QCoreApplication::processEvents();
+    } while(state != EXPECT_NONE);
+}
+
 void ClientPrivate::changeState(State newState) {
 
-    static const Qt::ConnectionType type = Qt::DirectConnection;
+    const Qt::ConnectionType type = Qt::DirectConnection;
 
     // Unbind the old pagehandler...
     switch(state) {
@@ -80,6 +99,9 @@ void ClientPrivate::changeState(State newState) {
         break;
     case EXPECT_TOKEN:
         QObject::disconnect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLoginComplete(bool)));
+        break;
+    case EXPECT_QUIT:
+        QObject::disconnect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLogoutComplete(bool)));
         break;
     case EXPECT_NONE:
     default:
@@ -95,6 +117,9 @@ void ClientPrivate::changeState(State newState) {
         break;
     case EXPECT_TOKEN:
         QObject::connect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLoginComplete(bool)), type);
+        break;
+    case EXPECT_QUIT:
+        QObject::connect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLogoutComplete(bool)), type);
         break;
     case EXPECT_NONE:
     default:
@@ -149,6 +174,18 @@ void ClientPrivate::onLoginComplete(bool result) {
     access_token.value = QJson::Parser().parse(frame.url().queryItemValue("session").toUtf8()).toMap().value("access_token").toString();
     changeState(EXPECT_NONE);
 }
+
+void ClientPrivate::onLogoutComplete(bool result) {
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Loaded Result";
+    qDebug() << frame.url();
+#endif
+
+    access_token.value.clear();
+    changeState(EXPECT_NONE);
+}
+
 
 QUrl ClientPrivate::objectUrl(const QString & object) {
     QUrl url;

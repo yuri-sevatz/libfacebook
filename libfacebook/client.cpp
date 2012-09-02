@@ -14,7 +14,11 @@ Client::~Client() {
 }
 
 void Client::login(const app::Settings & settings, const auth::Credentials & credentials) {
-    return d_ptr->login(settings, credentials);
+    d_ptr->login(settings, credentials);
+}
+
+void Client::logout(const app::Settings & settings) {
+    d_ptr->logout(settings);
 }
 
 QVariantMap Client::get(const QString & object) {

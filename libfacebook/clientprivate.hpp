@@ -33,6 +33,7 @@ public:
     virtual ~ClientPrivate();
 
     void login(const app::Settings & settings, const auth::Credentials & credentials);
+    void logout(const app::Settings & settings);
 
     QVariantMap get(const QString & object);
     QVariantMap post(const QString & object, const QVariantMap & data);
@@ -47,12 +48,14 @@ private:
         EXPECT_NONE = 0,
         EXPECT_FORM = 1,
         EXPECT_TOKEN = 2,
+        EXPECT_QUIT = 3,
     } state;
 
     void changeState(State newState);
 
     Q_SLOT void onFormLoaded(bool result);
     Q_SLOT void onLoginComplete(bool result);
+    Q_SLOT void onLogoutComplete(bool result);
 
     QVariantMap decode(QNetworkReply * const reply);
     QByteArray encode(const QVariantMap & data);

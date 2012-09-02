@@ -28,6 +28,7 @@ public:
     virtual ~Client();
 
     void login(const app::Settings & settings, const auth::Credentials & credentials);
+    void logout(const app::Settings & settings);
     QVariantMap get(const QString & object);
     QVariantMap post(const QString & object, const QVariantMap & data);
     QVariantMap post(const QString & object, const QByteArray & data);
