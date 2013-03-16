@@ -24,7 +24,8 @@ namespace facebook {
 
 ClientPrivate::ClientPrivate() :
     frame(*page.mainFrame()),
-    state(EXPECT_NONE) {
+    pageLoader(page)
+{
 
 }
 
@@ -32,10 +33,27 @@ ClientPrivate::~ClientPrivate() {
 
 }
 
-void ClientPrivate::login(const app::Settings & settings, const auth::Credentials & credentials) {
+bool ClientPrivate::load() {
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Loading AJAX...";
+#endif
+
+    return pageLoader.load();
+}
+
+bool ClientPrivate::load(const QUrl & url) {
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Loading Page...";
+    qDebug() << url;
+#endif
+
+    return pageLoader.load(url);
+}
+
+
+bool ClientPrivate::login(const app::Settings & settings, const auth::Credentials & credentials) {
 
     access_token.value.clear();
-    remoteKey = credentials;
 
     QUrl target(QString("https://www.facebook.com/login.php"));
 
@@ -51,93 +69,16 @@ void ClientPrivate::login(const app::Settings & settings, const auth::Credential
     target.addQueryItem(QString("session_version"), QString("3"));
     target.addQueryItem(QString("v"), QString("1.0"));
 
-    // TODO: Replace with app::Settings fields.
     target.addQueryItem(QString("req_params"), settings.permissions.join(","));
 
-#ifdef VERBOSE_OUTPUT
-    qDebug() << "Loading ";
-    qDebug() << target;
-#endif
-
-    changeState(EXPECT_FORM);
-    frame.load(target);
-
-    do {
-        QCoreApplication::processEvents();
-    } while(state != EXPECT_NONE);
-
-    remoteKey = auth::Credentials();
-}
-
-void ClientPrivate::logout(const app::Settings & settings) {
-    QUrl target(QString("https://www.facebook.com/logout.php"));
-
-    target.addQueryItem(QString("next"), settings.baseUrl);
-    target.addQueryItem(QString("access_token"), access_token.value);
-
-#ifdef VERBOSE_OUTPUT
-    qDebug() << "Loading ";
-    qDebug() << target;
-#endif
-
-    changeState(EXPECT_QUIT);
-    frame.load(target);
-
-    do {
-        QCoreApplication::processEvents();
-    } while(state != EXPECT_NONE);
-}
-
-void ClientPrivate::changeState(State newState) {
-
-    const Qt::ConnectionType type = Qt::DirectConnection;
-
-    // Unbind the old pagehandler...
-    switch(state) {
-    case EXPECT_FORM:
-        QObject::disconnect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onFormLoaded(bool)));
-        break;
-    case EXPECT_TOKEN:
-        QObject::disconnect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLoginComplete(bool)));
-        break;
-    case EXPECT_QUIT:
-        QObject::disconnect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLogoutComplete(bool)));
-        break;
-    case EXPECT_NONE:
-    default:
-        break;
+    if (!load(target)) {
+        return false;
     }
-
-    state = newState;
-
-    // Bind a new pagehandler...
-    switch(newState) {
-    case EXPECT_FORM:
-        QObject::connect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onFormLoaded(bool)), type);
-        break;
-    case EXPECT_TOKEN:
-        QObject::connect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLoginComplete(bool)), type);
-        break;
-    case EXPECT_QUIT:
-        QObject::connect(&page, SIGNAL(loadFinished(bool)), this, SLOT(onLogoutComplete(bool)), type);
-        break;
-    case EXPECT_NONE:
-    default:
-        break;
-    }
-}
-
-void ClientPrivate::onFormLoaded(bool result) {
 
 #ifdef VERBOSE_OUTPUT
     qDebug() << "Loaded Form";
     qDebug() << frame.url();
 #endif
-
-    if (!result) {
-        changeState(EXPECT_NONE); // Send a null token;
-        return;
-    }
 
     QWebElement email =
         frame.findFirstElement("input[id=\"email\"]");
@@ -153,18 +94,16 @@ void ClientPrivate::onFormLoaded(bool result) {
 #endif
 
     if (email.isNull() || pass.isNull() || submit.isNull()) {
-        changeState(EXPECT_NONE); // Send a null token
-        return;
+        return false;
     }
 
-    email.setAttribute("value", remoteKey.login);
-    pass.setAttribute("value", remoteKey.pass);
+    email.setAttribute("value", credentials.login);
+    pass.setAttribute("value", credentials.pass);
 
-    changeState(EXPECT_TOKEN);
     submit.evaluateJavaScript("this.click()");
-}
-
-void ClientPrivate::onLoginComplete(bool result) {
+    if (!load()) {
+        return false;
+    }
 
 #ifdef VERBOSE_OUTPUT
     qDebug() << "Loaded Result";
@@ -172,20 +111,26 @@ void ClientPrivate::onLoginComplete(bool result) {
 #endif
 
     access_token.value = QJson::Parser().parse(frame.url().queryItemValue("session").toUtf8()).toMap().value("access_token").toString();
-    changeState(EXPECT_NONE);
+    return !access_token.value.isEmpty();
 }
 
-void ClientPrivate::onLogoutComplete(bool result) {
+bool ClientPrivate::logout(const app::Settings & settings) {
+    QUrl target(QString("https://www.facebook.com/logout.php"));
 
+    target.addQueryItem(QString("next"), settings.baseUrl);
+    target.addQueryItem(QString("access_token"), access_token.value);
+
+    if (load(target)) {
 #ifdef VERBOSE_OUTPUT
-    qDebug() << "Loaded Result";
-    qDebug() << frame.url();
+        qDebug() << "Loaded Result";
+        qDebug() << frame.url();
 #endif
-
-    access_token.value.clear();
-    changeState(EXPECT_NONE);
+        access_token.value.clear();
+        return true;
+    } else {
+        return false;
+    }
 }
-
 
 QUrl ClientPrivate::objectUrl(const QString & object) {
     QUrl url;
@@ -197,10 +142,7 @@ QUrl ClientPrivate::objectUrl(const QString & object) {
 }
 
 inline QVariantMap ClientPrivate::decode(QNetworkReply * const reply) {
-    while(reply->isRunning()) {
-        QCoreApplication::processEvents();
-    }
-    return QJson::Parser().parse(reply->readAll()).toMap();
+    return QJson::Parser().parse(QScopedPointer<QNetworkReply>(requestLoader.load(reply))->readAll()).toMap();
 }
 
 inline QByteArray ClientPrivate::encode(const QVariantMap & data) {
@@ -216,7 +158,7 @@ QVariantMap ClientPrivate::get(const QString & object) {
     qDebug() << "GET" << request.url();
 #endif
 
-    return decode(QScopedPointer<QNetworkReply>(manager.get(request)).data());
+    return decode(manager.get(request));
 }
 
 QVariantMap ClientPrivate::post(const QString & object, const QVariantMap & data) {
@@ -231,7 +173,7 @@ QVariantMap ClientPrivate::post(const QString & object, const QByteArray & data)
     qDebug() << "POST" << request.url();
 #endif
 
-    return decode(QScopedPointer<QNetworkReply>(manager.post(request, data)).data());
+    return decode(manager.post(request, data));
 }
 
 QVariantMap ClientPrivate::del(const QString & object) {
@@ -242,7 +184,7 @@ QVariantMap ClientPrivate::del(const QString & object) {
     qDebug() << "DELETE" << request.url();
 #endif
 
-    return decode(QScopedPointer<QNetworkReply>(manager.deleteResource(request)).data());
+    return decode(manager.deleteResource(request));
 }
 
 }

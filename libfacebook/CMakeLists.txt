@@ -15,9 +15,6 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_SOURCE_DIR}/cmake/Modules
 )
 
-set(Boost_USE_STATIC_LIBS OFF)
-find_package(Boost COMPONENTS iostreams thread system REQUIRED)
-
 set(QT_USE_NETWORK TRUE)
 set(QT_USE_QTWEBKIT TRUE)
 find_package(Qt4 REQUIRED)
@@ -47,11 +44,15 @@ set(${PROJECT_NAME}_pub_sources
 
 set(${PROJECT_NAME}_pri_headers
     clientprivate.hpp
+    web/pageloader.hpp
+    web/requestloader.hpp
 )
 
 set(${PROJECT_NAME}_pri_sources
     client.cpp
     clientprivate.cpp
+    web/pageloader.cpp
+    web/requestloader.cpp
 )
 
 set(${PROJECT_NAME}_headers
@@ -68,9 +69,6 @@ QT4_WRAP_CPP(${PROJECT_NAME}_headers_moc ${${PROJECT_NAME}_headers})
 
 # Includes
 # ---------------
-message("Boost_INCLUDE_DIR")
-message(${Boost_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIR})
 
 # Pre-linkage Qt
 # ---------------
@@ -83,24 +81,17 @@ include_directories(${QJSON_INCLUDE_DIR})
 
 # Linked Libraries
 # ---------------
-message("Boost_LIBRARY_DIRS")
-message(${Boost_LIBRARY_DIRS})
-
 message("QT_LIBRARIES")
 message(${QT_LIBRARIES})
 
 message("QJSON_LIBRARIES")
 message(${QJSON_LIBRARIES})
 
-## For MSVS2010 - has issues with target_link_libraries
-## Still looking for a way to turn this on pragmatically
-#link_directories(${Boost_LIBRARY_DIRS})
-
 # Create the library
 # ---------------
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_headers_moc} ${${PROJECT_NAME}_sources})
 
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} qjson ${QT_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} qjson ${QT_LIBRARIES})
 
 # Install
 # ---------------

@@ -5,8 +5,9 @@
 
 #include <QByteArray>
 
-#include <libfacebook/auth/credentials.hpp>
 #include <libfacebook/auth/token.hpp>
+#include <libfacebook/web/pageloader.hpp>
+#include <libfacebook/web/requestloader.hpp>
 
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
@@ -23,7 +24,6 @@ struct Settings;
 
 namespace auth {
 struct Credentials;
-struct Token;
 }
 
 class ClientPrivate : public QObject {
@@ -32,8 +32,8 @@ public:
     ClientPrivate();
     virtual ~ClientPrivate();
 
-    void login(const app::Settings & settings, const auth::Credentials & credentials);
-    void logout(const app::Settings & settings);
+    bool login(const app::Settings & settings, const auth::Credentials & credentials);
+    bool logout(const app::Settings & settings);
 
     QVariantMap get(const QString & object);
     QVariantMap post(const QString & object, const QVariantMap & data);
@@ -44,18 +44,8 @@ public:
     const auth::Token & token() const;
 
 private:
-    enum State {
-        EXPECT_NONE = 0,
-        EXPECT_FORM = 1,
-        EXPECT_TOKEN = 2,
-        EXPECT_QUIT = 3,
-    } state;
-
-    void changeState(State newState);
-
-    Q_SLOT void onFormLoaded(bool result);
-    Q_SLOT void onLoginComplete(bool result);
-    Q_SLOT void onLogoutComplete(bool result);
+    bool load();
+    bool load(const QUrl & url);
 
     QVariantMap decode(QNetworkReply * const reply);
     QByteArray encode(const QVariantMap & data);
@@ -64,9 +54,11 @@ private:
     QWebPage page;
     QWebFrame & frame;
 
+    web::PageLoader pageLoader;
+    web::RequestLoader requestLoader;
+
     QNetworkAccessManager manager;
 
-    auth::Credentials remoteKey;
     auth::Token access_token;
 };
 
