@@ -9,12 +9,13 @@
 #include <libfacebook/web/pageloader.hpp>
 #include <libfacebook/web/requestloader.hpp>
 
-#include <QtNetwork/QNetworkAccessManager>
-#include <QtNetwork/QNetworkReply>
-
 #include <QVariantMap>
-#include <QWebFrame>
 #include <QWebPage>
+
+class QNetworkAccessManager;
+class QNetworkReply;
+
+class QWebFrame;
 
 namespace facebook {
 
@@ -53,11 +54,10 @@ private:
 
     QWebPage page;
     QWebFrame & frame;
+    QNetworkAccessManager & manager;
 
     web::PageLoader pageLoader;
     web::RequestLoader requestLoader;
-
-    QNetworkAccessManager manager;
 
     auth::Token access_token;
 };

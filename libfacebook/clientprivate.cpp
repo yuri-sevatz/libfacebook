@@ -14,6 +14,7 @@
 #include <QWebFrame>
 #include <QWebElement>
 
+#include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
 
@@ -24,6 +25,7 @@ namespace facebook {
 
 ClientPrivate::ClientPrivate() :
     frame(*page.mainFrame()),
+    manager(*page.networkAccessManager()),
     pageLoader(page)
 {
 
