@@ -3,21 +3,19 @@
 
 #include <QObject>
 
+#include <libfacebook/app.hpp>
+#include <libfacebook/token.hpp>
+
+#include <libtwirl/model/login.hpp>
+#include <libtwirl/model/session.hpp>
+
 #include <QByteArray>
 #include <QScopedPointer>
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 
 namespace facebook {
-
-namespace app {
-struct Settings;
-}
-
-namespace auth {
-struct Credentials;
-struct Token;
-}
 
 class ClientPrivate;
 
@@ -27,14 +25,21 @@ public:
     Client();
     virtual ~Client();
 
-    void login(const app::Settings & settings, const auth::Credentials & credentials);
-    void logout(const app::Settings & settings);
+    bool login(const twirl::Login & login);
+    bool logout();
+
+    Token acquireToken(const App & app, const QStringList & permissions = QStringList());
+
     QVariantMap get(const QString & object);
     QVariantMap post(const QString & object, const QVariantMap & data);
     QVariantMap post(const QString & object, const QByteArray & data);
     QVariantMap del(const QString & object);
-    auth::Token & token();
-    const auth::Token & token() const;
+
+    bool load(twirl::Session & session);
+    bool save(twirl::Session & session);
+
+    const Token & token() const;
+    void setToken(const Token & token);
 
 private:
     Q_DISABLE_COPY(Client);

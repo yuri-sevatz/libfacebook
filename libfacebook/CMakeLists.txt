@@ -32,10 +32,9 @@ CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/libfacebook/include/config.h.cmake ${CMAKE_SO
 # ---------------
 
 set(${PROJECT_NAME}_pub_headers
+    app.hpp
     client.hpp
-    app/settings.hpp
-    auth/credentials.hpp
-    auth/token.hpp
+    token.hpp
 )
 
 set(${PROJECT_NAME}_pub_sources
@@ -43,16 +42,16 @@ set(${PROJECT_NAME}_pub_sources
 )
 
 set(${PROJECT_NAME}_pri_headers
+    appdata.hpp
     clientprivate.hpp
-    web/pageloader.hpp
-    web/requestloader.hpp
+    tokendata.hpp
 )
 
 set(${PROJECT_NAME}_pri_sources
+    app.cpp
     client.cpp
     clientprivate.cpp
-    web/pageloader.cpp
-    web/requestloader.cpp
+    token.cpp
 )
 
 set(${PROJECT_NAME}_headers
@@ -91,7 +90,7 @@ message(${QJSON_LIBRARIES})
 # ---------------
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_headers_moc} ${${PROJECT_NAME}_sources})
 
-target_link_libraries(${PROJECT_NAME} qjson ${QT_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} twirl qjson ${QT_LIBRARIES})
 
 # Install
 # ---------------

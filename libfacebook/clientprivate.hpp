@@ -1,74 +1,72 @@
 #ifndef LIBFACEBOOK_CLIENTPRIVATE_H
 #define LIBFACEBOOK_CLIENTPRIVATE_H
 
-#include <QObject>
+#include <libfacebook/app.hpp>
+#include <libfacebook/token.hpp>
+
+#include <libtwirl/model/login.hpp>
+#include <libtwirl/model/session.hpp>
+#include <libtwirl/web/pageloader.hpp>
+#include <libtwirl/web/requestloader.hpp>
 
 #include <QByteArray>
-
-#include <libfacebook/auth/token.hpp>
-#include <libfacebook/web/pageloader.hpp>
-#include <libfacebook/web/requestloader.hpp>
-
+#include <QStringList>
 #include <QVariantMap>
 #include <QWebPage>
 
 class QNetworkAccessManager;
 class QNetworkReply;
-
 class QWebFrame;
 
 namespace facebook {
 
-namespace app {
-struct Settings;
-}
-
-namespace auth {
-struct Credentials;
-}
-
-class ClientPrivate : public QObject {
-    Q_OBJECT
+class ClientPrivate {
 public:
     ClientPrivate();
     virtual ~ClientPrivate();
 
-    bool login(const app::Settings & settings, const auth::Credentials & credentials);
-    bool logout(const app::Settings & settings);
+    bool login(const twirl::Login & login);
+    bool logout();
+
+    Token acquireToken(const App & app, const QStringList & permissions);
 
     QVariantMap get(const QString & object);
     QVariantMap post(const QString & object, const QVariantMap & data);
     QVariantMap post(const QString & object, const QByteArray & data);
     QVariantMap del(const QString & object);
 
-    auth::Token & token();
-    const auth::Token & token() const;
+    bool load(twirl::Session & session);
+    bool save(twirl::Session & session);
+
+    Token token;
 
 private:
     bool load();
     bool load(const QUrl & url);
 
+    bool requestToken(const App & app, const QStringList & permissions);
+
+    bool grantAuth(const App & app, const QStringList & permissions);
+
+    bool viewingBase(const App & app) const;
+    bool viewingAuth() const;
+    bool viewingLogin() const;
+
     QVariantMap decode(QNetworkReply * const reply);
     QByteArray encode(const QVariantMap & data);
     QUrl objectUrl(const QString & object);
+
+    static const QUrl authUrl;
+    static const QUrl loginUrl;
+    static const QUrl logoutUrl;
 
     QWebPage page;
     QWebFrame & frame;
     QNetworkAccessManager & manager;
 
-    web::PageLoader pageLoader;
-    web::RequestLoader requestLoader;
-
-    auth::Token access_token;
+    twirl::PageLoader pageLoader;
+    twirl::RequestLoader requestLoader;
 };
-
-inline auth::Token & ClientPrivate::token() {
-    return access_token;
-}
-
-inline const auth::Token & ClientPrivate::token() const {
-    return access_token;
-}
 
 } /* namespace facebook */
 

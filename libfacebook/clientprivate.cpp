@@ -2,9 +2,6 @@
 
 #include <libfacebook/include/config.h>
 
-#include <libfacebook/app/settings.hpp>
-#include <libfacebook/auth/credentials.hpp>
-
 #ifdef VERBOSE_OUTPUT
 #include <QDebug>
 #endif
@@ -15,6 +12,8 @@
 #include <QWebElement>
 
 #include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkCookie>
+#include <QtNetwork/QNetworkCookieJar>
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QNetworkRequest>
 
@@ -23,115 +22,170 @@
 
 namespace facebook {
 
+const QUrl ClientPrivate::authUrl("https://www.facebook.com/dialog/oauth");
+const QUrl ClientPrivate::loginUrl("https://www.facebook.com/login.php");
+const QUrl ClientPrivate::logoutUrl("https://www.facebook.com/logout.php");
+
 ClientPrivate::ClientPrivate() :
     frame(*page.mainFrame()),
     manager(*page.networkAccessManager()),
-    pageLoader(page)
-{
+    pageLoader(page) {
 
 }
 
-ClientPrivate::~ClientPrivate() {
+ClientPrivate::~ClientPrivate() {}
 
-}
-
-bool ClientPrivate::load() {
+inline bool ClientPrivate::load() {
 #ifdef VERBOSE_OUTPUT
     qDebug() << "Loading AJAX...";
 #endif
 
-    return pageLoader.load();
+    const bool result = pageLoader.load();
+#ifdef VERBOSE_OUTPUT
+    if (result) {
+        qDebug() << "Done";
+        qDebug() << frame.url().toEncoded();
+    }
+#endif
+    return result;
 }
 
-bool ClientPrivate::load(const QUrl & url) {
+inline bool ClientPrivate::load(const QUrl & url) {
 #ifdef VERBOSE_OUTPUT
     qDebug() << "Loading Page...";
-    qDebug() << url;
+    qDebug() << url.toEncoded();
 #endif
 
-    return pageLoader.load(url);
+    const bool result = pageLoader.load(url);
+#ifdef VERBOSE_OUTPUT
+    if (result) {
+        qDebug() << "Done";
+        qDebug() << frame.url().toEncoded();
+    }
+#endif
+    return result;
 }
 
+bool ClientPrivate::login(const twirl::Login & login) {
 
-bool ClientPrivate::login(const app::Settings & settings, const auth::Credentials & credentials) {
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Loading Form...";
+#endif
 
-    access_token.value.clear();
-
-    QUrl target(QString("https://www.facebook.com/login.php"));
-
-    target.addQueryItem(QString("api_key"), settings.apiKey);
-    target.addQueryItem(QString("cancel_url"), settings.baseUrl);
-
-    target.addQueryItem(QString("display"), QString("page"));
-    target.addQueryItem(QString("fbconnect"), QString("1"));
-
-    target.addQueryItem(QString("next"), settings.baseUrl);
-
-    target.addQueryItem(QString("return_session"), QString("1"));
-    target.addQueryItem(QString("session_version"), QString("3"));
-    target.addQueryItem(QString("v"), QString("1.0"));
-
-    target.addQueryItem(QString("req_params"), settings.permissions.join(","));
-
-    if (!load(target)) {
+    if (!load(loginUrl) || !viewingLogin()) {
         return false;
     }
 
 #ifdef VERBOSE_OUTPUT
-    qDebug() << "Loaded Form";
-    qDebug() << frame.url();
+    qDebug() << "Logging In...";
 #endif
 
     QWebElement email =
         frame.findFirstElement("input[id=\"email\"]");
     QWebElement pass =
         frame.findFirstElement("input[id=\"pass\"]");
+    QWebElement persist =
+        frame.findFirstElement("input[id=\"persist_box\"]");
     QWebElement submit =
         frame.findFirstElement("input[name=\"login\"]");
 
 #ifdef VERBOSE_OUTPUT
-    qDebug() << "Email:" << QString(email.isNull() ? "NOT" : "") << "Found";
-    qDebug() << "Password:" << QString(pass.isNull() ? "NOT" : "") << "Found";
-    qDebug() << "Submit:" << QString(submit.isNull() ? "NOT" : "") << "Found";
+    qDebug() << "Email:" << (email.isNull() ? "NOT" : "") << "Found";
+    qDebug() << "Password:" << (pass.isNull() ? "NOT" : "") << "Found";
+    qDebug() << "Persist:" << (persist.isNull() ? "NOT" : "") << "Found";
+    qDebug() << "Submit:" << (submit.isNull() ? "NOT" : "") << "Found";
 #endif
 
-    if (email.isNull() || pass.isNull() || submit.isNull()) {
+    if (email.isNull() || pass.isNull() || persist.isNull() || submit.isNull()) {
         return false;
     }
 
-    email.setAttribute("value", credentials.login);
-    pass.setAttribute("value", credentials.pass);
-
+    email.setAttribute("value", login.username());
+    pass.setAttribute("value", login.password());
+    persist.evaluateJavaScript("this.click()");
     submit.evaluateJavaScript("this.click()");
-    if (!load()) {
-        return false;
-    }
 
-#ifdef VERBOSE_OUTPUT
-    qDebug() << "Loaded Result";
-    qDebug() << frame.url();
-#endif
-
-    access_token.value = QJson::Parser().parse(frame.url().queryItemValue("session").toUtf8()).toMap().value("access_token").toString();
-    return !access_token.value.isEmpty();
+    // TODO: Add session validity detection
+    return load();
 }
 
-bool ClientPrivate::logout(const app::Settings & settings) {
-    QUrl target(QString("https://www.facebook.com/logout.php"));
+bool ClientPrivate::logout() {
+    return load(logoutUrl);
+}
 
-    target.addQueryItem(QString("next"), settings.baseUrl);
-    target.addQueryItem(QString("access_token"), access_token.value);
+bool ClientPrivate::requestToken(const App & app, const QStringList & permissions) {
 
-    if (load(target)) {
 #ifdef VERBOSE_OUTPUT
-        qDebug() << "Loaded Result";
-        qDebug() << frame.url();
+    qDebug() << "Requesting Token...";
 #endif
-        access_token.value.clear();
-        return true;
-    } else {
+
+    QUrl next(authUrl);
+    next.addEncodedQueryItem("redirect_uri", QUrl::toPercentEncoding(app.baseUrl()));
+    next.addEncodedQueryItem("scope", QUrl::toPercentEncoding(permissions.join(",+"), "+"));
+    next.addEncodedQueryItem("response_type", "token");
+    next.addEncodedQueryItem("client_id", QUrl::toPercentEncoding(app.apiKey()));
+    next.addEncodedQueryItem("ret", "login");
+
+    QUrl cancelUri(app.baseUrl());
+    cancelUri.addEncodedQueryItem("error", "access_denied");
+    cancelUri.addEncodedQueryItem("error_code", "200");
+    cancelUri.addEncodedQueryItem("error_description", "Permissions+error");
+    cancelUri.addEncodedQueryItem("error_reason", "user_denied#_=_");
+
+    QUrl target(loginUrl);
+    target.addEncodedQueryItem("skip_api_login", "1");
+    target.addEncodedQueryItem("api_key", QUrl::toPercentEncoding(app.apiKey()));
+    target.addEncodedQueryItem("signed_next", "1");
+    target.addEncodedQueryItem("next", QUrl::toPercentEncoding(next.toEncoded()));
+    target.addEncodedQueryItem("cancel_uri", QUrl::toPercentEncoding(cancelUri.toEncoded()));
+    target.addEncodedQueryItem("display", "page");
+
+    return load(target);
+}
+
+Token ClientPrivate::acquireToken(const App & app, const QStringList & permissions) {
+    Token ret;
+
+    if (requestToken(app, permissions) && (viewingBase(app) || (viewingAuth() && grantAuth(app, permissions)))) {
+#ifdef VERBOSE_OUTPUT
+        qDebug() << "Extracting Token...";
+#endif
+
+        const QUrl fragment(QString("?").append(frame.url().fragment()));
+
+        ret.setValue(fragment.queryItemValue("access_token"));
+        ret.setExpiry(QDateTime::currentDateTime().addSecs(
+                          fragment.queryItemValue("expires_in").toInt()
+                      ));
+    }
+
+    return ret;
+}
+
+bool ClientPrivate::grantAuth(const App & app, const QStringList & permissions) {
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Authorizing...";
+#endif
+
+    QWebElement okay =
+        frame.findFirstElement("button[name=\"__CONFIRM__\"]");
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Confirm:" << (okay.isNull() ? "NOT" : "") << "Found";
+#endif
+
+    if (okay.isNull()) {
         return false;
     }
+
+#ifdef VERBOSE_OUTPUT
+    qDebug() << "Granting Permissions";
+#endif
+
+    okay.evaluateJavaScript("this.click()");
+
+    // (1) Load and (2) Check for redirect to baseUrl, otherwise (3) Resubmit request and (4) recheck redirect
+    return load() && (viewingBase(app) || (requestToken(app, permissions) && viewingBase(app)));
 }
 
 QUrl ClientPrivate::objectUrl(const QString & object) {
@@ -139,7 +193,7 @@ QUrl ClientPrivate::objectUrl(const QString & object) {
     url.setScheme("https");
     url.setHost("graph.facebook.com");
     url.setPath(object);
-    url.setQueryItems(QList<QPair<QString, QString> >() << qMakePair<QString, QString>(QString("access_token"), access_token.value));
+    url.addEncodedQueryItem("access_token", QUrl::toPercentEncoding(token.value()));
     return url;
 }
 
@@ -187,6 +241,32 @@ QVariantMap ClientPrivate::del(const QString & object) {
 #endif
 
     return decode(manager.deleteResource(request));
+}
+
+bool ClientPrivate::load(twirl::Session & session) {
+    QList<QNetworkCookie> cookies;
+    if (session.load(cookies)) {
+        manager.cookieJar()->setCookiesFromUrl(cookies, QUrl("https://facebook.com"));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool ClientPrivate::save(twirl::Session & session) {
+    return session.save(manager.cookieJar()->cookiesForUrl(QUrl("https://facebook.com")));
+}
+
+bool ClientPrivate::viewingBase(const App & app) const {
+    return QUrl(frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment)) == QUrl(app.baseUrl());
+}
+
+bool ClientPrivate::viewingAuth() const {
+    return frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment) == authUrl.toString();
+}
+
+bool ClientPrivate::viewingLogin() const {
+    return frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment) == loginUrl.toString();
 }
 
 }

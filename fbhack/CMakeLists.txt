@@ -39,7 +39,7 @@ ADD_DEFINITIONS(${QT_DEFINITIONS})
 # ---------------
 add_executable(${PROJECT_NAME} ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_headers_moc} ${${PROJECT_NAME}_sources})
 
-target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} facebook)
+target_link_libraries(${PROJECT_NAME} twirl facebook ${QT_LIBRARIES})
 
 # Install
 # ---------------

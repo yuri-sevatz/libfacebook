@@ -20,9 +20,11 @@ private:
     void printMap(const QVariantMap & map, size_t depth);
     void printValue(const QVariant & value, size_t depth = 0);
     void help(const QStringList & args);
-    void force(const QString & param, QString & target);
+    QString require(const QString & param);
+    void require(const QString & param, QString & target);
 
     QTextStream qtout;
+    QTextStream qterr;
     QTextStream qtin;
 };
 

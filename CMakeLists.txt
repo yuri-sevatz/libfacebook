@@ -4,6 +4,7 @@ project(fb)
 
 include_directories(./)
 
+add_subdirectory(libtwirl)
 add_subdirectory(libfacebook)
 add_subdirectory(fbhack)
 

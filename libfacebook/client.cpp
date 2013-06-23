@@ -13,12 +13,16 @@ Client::~Client() {
 
 }
 
-void Client::login(const app::Settings & settings, const auth::Credentials & credentials) {
-    d_ptr->login(settings, credentials);
+bool Client::login(const twirl::Login & login) {
+    return d_ptr->login(login);
 }
 
-void Client::logout(const app::Settings & settings) {
-    d_ptr->logout(settings);
+bool Client::logout() {
+    return d_ptr->logout();
+}
+
+Token Client::acquireToken(const App & app, const QStringList & permissions) {
+    return d_ptr->acquireToken(app, permissions);
 }
 
 QVariantMap Client::get(const QString & object) {
@@ -37,12 +41,19 @@ QVariantMap Client::del(const QString & object) {
     return d_ptr->del(object);
 }
 
-auth::Token & Client::token() {
-    return d_ptr->token();
+const Token & Client::token() const {
+    return d_ptr->token;
 }
 
-const auth::Token & Client::token() const {
-    return d_ptr->token();
+void Client::setToken(const Token & token) {
+    d_ptr->token = token;
+}
+
+bool Client::load(twirl::Session & session) {
+    return d_ptr->load(session);
+}
+bool Client::save(twirl::Session & session) {
+    return d_ptr->save(session);
 }
 
 } /* namespace facebook */
