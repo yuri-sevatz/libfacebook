@@ -169,6 +169,10 @@ void FBHack::main() {
         break;
     case LOGOUT:
         qDebug() << (client.logout() ? "Logout Complete" : "Error Logging Out");
+        if (!session.isNull() && !client.save(session)) {
+            qDebug() << "Error clearing session";
+            return;
+        }
         return;
     }
 
