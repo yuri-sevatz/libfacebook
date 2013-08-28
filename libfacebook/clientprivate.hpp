@@ -52,6 +52,8 @@ private:
     bool viewingAuth() const;
     bool viewingLogin() const;
 
+    static QUrl::FormattingOptions uniqueUrl();
+
     QVariantMap decode(QNetworkReply * const reply);
     QByteArray encode(const QVariantMap & data);
     QUrl objectUrl(const QString & object);

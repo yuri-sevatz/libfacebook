@@ -156,7 +156,7 @@ Token ClientPrivate::acquireToken(const App & app, const QStringList & permissio
         ret.setValue(fragment.queryItemValue("access_token"));
         ret.setExpiry(QDateTime::currentDateTime().addSecs(
                           fragment.queryItemValue("expires_in").toInt()
-                      ));
+        ));
     }
 
     return ret;
@@ -258,15 +258,19 @@ bool ClientPrivate::save(twirl::Session & session) {
 }
 
 bool ClientPrivate::viewingBase(const App & app) const {
-    return QUrl(frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment)) == QUrl(app.baseUrl());
+    return frame.url().toString(uniqueUrl()) == QUrl(app.baseUrl()).toString(uniqueUrl());
 }
 
 bool ClientPrivate::viewingAuth() const {
-    return frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment) == authUrl.toString();
+    return frame.url().toString(uniqueUrl()) == authUrl.toString();
 }
 
 bool ClientPrivate::viewingLogin() const {
-    return frame.url().toString(QUrl::RemoveQuery | QUrl::RemoveFragment) == loginUrl.toString();
+    return frame.url().toString(uniqueUrl()) == loginUrl.toString();
+}
+
+inline QUrl::FormattingOptions ClientPrivate::uniqueUrl() {
+    return QUrl::RemoveQuery | QUrl::RemoveFragment | QUrl::StripTrailingSlash;
 }
 
 }
