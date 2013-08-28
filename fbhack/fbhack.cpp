@@ -178,7 +178,7 @@ void FBHack::main() {
 
     switch(method) {
     case LOGIN:
-        qtout << "Token: " << client.token().value() << "\n";
+        qtout << client.token().value();
         break;
     case GET:
         printValue(client.get(object));
