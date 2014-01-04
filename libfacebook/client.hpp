@@ -9,7 +9,8 @@
 #include <libtwirl/model/login.hpp>
 #include <libtwirl/model/session.hpp>
 
-#include <QByteArray>
+#include <QJsonDocument>
+#include <QMap>
 #include <QScopedPointer>
 #include <QString>
 #include <QStringList>
@@ -30,16 +31,16 @@ public:
 
     Token acquireToken(const App & app, const QStringList & permissions = QStringList());
 
-    QVariantMap get(const QString & object);
-    QVariantMap post(const QString & object, const QVariantMap & data);
-    QVariantMap post(const QString & object, const QByteArray & data);
-    QVariantMap del(const QString & object);
+    QJsonDocument get(const QString & object, const QMap<QString,QString> & params = QMap<QString,QString>());
+    QJsonDocument post(const QString & object, const QMap<QString,QString> & params = QMap<QString,QString>(), const QByteArray & data = QByteArray());
+    QJsonDocument del(const QString & object, const QMap<QString,QString> & params = QMap<QString,QString>());
 
     bool load(twirl::Session & session);
     bool save(twirl::Session & session);
 
     const Token & token() const;
     void setToken(const Token & token);
+    void resetToken();
 
 private:
     Q_DISABLE_COPY(Client);

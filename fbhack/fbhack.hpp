@@ -6,6 +6,11 @@
 #include <QStringList>
 #include <QTextStream>
 
+class QJsonDocument;
+class QJsonArray;
+class QJsonObject;
+class QJsonValue;
+
 class FBHack : public Bootstrap {
 public:
     FBHack();
@@ -16,9 +21,10 @@ protected:
 
 private:
     void indent(size_t depth);
-    void printList(const QVariantList & list, size_t depth);
-    void printMap(const QVariantMap & map, size_t depth);
-    void printValue(const QVariant & value, size_t depth = 0);
+    void printDocument(const QJsonDocument & json);
+    void printArray(const QJsonArray & array, size_t depth);
+    void printObject(const QJsonObject & object, size_t depth);
+    void printValue(const QJsonValue & value, size_t depth);
     void help(const QStringList & args);
     QString require(const QString & param);
     void require(const QString & param, QString & target);

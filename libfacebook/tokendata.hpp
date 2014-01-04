@@ -40,7 +40,7 @@ inline TokenData::TokenData(const QString & value, const QDateTime & expiry) :
 inline TokenData::~TokenData() {}
 
 inline bool TokenData::isExpired() const {
-    return expiry <= QDateTime::currentDateTime();
+    return !expiry.isNull() && expiry <= QDateTime::currentDateTime();
 }
 
 inline bool TokenData::isValid() const {

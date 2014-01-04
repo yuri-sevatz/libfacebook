@@ -8,6 +8,11 @@
 
 #include <libfacebook/client.hpp>
 
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
+
 using namespace facebook;
 
 enum Method {
@@ -43,7 +48,8 @@ void FBHack::help(const QStringList & args) {
     qDebug() << "";
     qDebug() << "\t-o graphObj" << "\t" << "Graph Object to return - (Required if method != LOGIN)";
     qDebug() << "\t-r permissions" << "\t" << "A comma-delimited list of Permissions - (Optional)";
-    qDebug() << "\t-d postData" << "\t" << "Data to bundle with a POST request - (Optional)";
+    qDebug() << "\t-a arg" << "\t" << "Append a key=value argument to the API call - (Optional)";
+    //qDebug() << "\t-d postData" << "\t" << "Data to bundle with a POST request - (Optional)";
     qDebug() << "";
     qDebug() << "\t-h" << "\t\t" << "Show this help message";
     qDebug() << "";
@@ -60,7 +66,7 @@ void FBHack::main() {
     Client client;
     twirl::Session session;
     Method method = LOGIN;
-    QByteArray data;
+    QMap<QString,QString> params;
 
     const QStringList args = QApplication::arguments();
 
@@ -96,8 +102,11 @@ void FBHack::main() {
             permissions = args.value(++argi).split(QRegExp("[\\s,]+"), QString::SkipEmptyParts);
         } else if (arg == "-o") {
             object = args.value(++argi);
-        } else if (arg == "-d") {
-            data = args.value(++argi).toUtf8();
+        } else if (arg == "-a") {
+            const QRegExp regex("([^=]+)=?([^=].*)");
+            if (regex.exactMatch(args.value(++argi))) {
+                params.insert(regex.cap(1), regex.cap(2));
+            }
         } else if (arg == "-t") {
             client.setToken(Token(args.value(++argi)));
         } else if (arg == "-s") {
@@ -181,13 +190,13 @@ void FBHack::main() {
         qtout << client.token().value();
         break;
     case GET:
-        printValue(client.get(object));
+        printDocument(client.get(object, params));
         break;
     case POST:
-        printValue(client.post(object, data));
+        printDocument(client.post(object, params));
         break;
     case DELETE:
-        printValue(client.del(object));
+        printDocument(client.del(object, params));
         break;
     }
     qtout << "\n";
@@ -214,10 +223,18 @@ void FBHack::indent(size_t indent) {
     }
 }
 
-void FBHack::printList(const QVariantList & list, size_t depth) {
+void FBHack::printDocument(const QJsonDocument & json) {
+    if (json.isObject()) {
+        printObject(json.object(), 0);
+    } else if (json.isArray()) {
+        printArray(json.array(), 0);
+    }
+}
+
+void FBHack::printArray(const QJsonArray & array, size_t depth) {
     qtout << "[\n";
     const size_t bodyDepth = depth + 1;
-    for(QVariantList::const_iterator iter = list.constBegin(); iter != list.constEnd(); ++iter) {
+    for(QJsonArray::const_iterator iter = array.constBegin(); iter != array.constEnd(); ++iter) {
         indent(bodyDepth);
         printValue(*iter, bodyDepth);
         qtout << ",\n";
@@ -226,10 +243,10 @@ void FBHack::printList(const QVariantList & list, size_t depth) {
     qtout << "]";
 }
 
-void FBHack::printMap(const QVariantMap & map, size_t depth) {
+void FBHack::printObject(const QJsonObject & object, size_t depth) {
     qtout << "{\n";
     const size_t bodyDepth = depth + 1;
-    for(QVariantMap::const_iterator iter = map.constBegin(); iter != map.constEnd(); ++iter) {
+    for(QJsonObject::const_iterator iter = object.constBegin(); iter != object.constEnd(); ++iter) {
         indent(bodyDepth);
         qtout << iter.key() << ": ";
         printValue(*iter, bodyDepth);
@@ -239,16 +256,27 @@ void FBHack::printMap(const QVariantMap & map, size_t depth) {
     qtout << "}";
 }
 
-void FBHack::printValue(const QVariant & value, size_t depth) {
+void FBHack::printValue(const QJsonValue & value, size_t depth) {
     switch(value.type()) {
-    case QVariant::Map:
-        printMap(value.toMap(), depth);
+    case QJsonValue::Bool:
+        qtout << value.toBool();
         break;
-    case QVariant::List:
-        printList(value.toList(), depth);
+    case QJsonValue::Double:
+        qtout << value.toDouble();
         break;
-    default:
+    case QJsonValue::String:
         qtout << value.toString();
+        break;
+    case QJsonValue::Array:
+        printArray(value.toArray(), depth);
+        break;
+    case QJsonValue::Object:
+        printObject(value.toObject(), depth);
+        break;
+    case QJsonValue::Null:
+    case QJsonValue::Undefined:
+    default:
+        break;
     }
 }
 

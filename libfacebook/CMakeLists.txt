@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.8)
 
 # project details
 # ---------------
@@ -15,11 +15,7 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_SOURCE_DIR}/cmake/Modules
 )
 
-set(QT_USE_NETWORK TRUE)
-set(QT_USE_QTWEBKIT TRUE)
-find_package(Qt4 REQUIRED)
-
-find_package(QJSON REQUIRED)
+find_package(Qt5 COMPONENTS Core Network WebKit WebKitWidgets REQUIRED)
 
 # configuration
 
@@ -44,6 +40,7 @@ set(${PROJECT_NAME}_pub_sources
 set(${PROJECT_NAME}_pri_headers
     appdata.hpp
     clientprivate.hpp
+    facebookpage.hpp
     tokendata.hpp
 )
 
@@ -51,6 +48,7 @@ set(${PROJECT_NAME}_pri_sources
     app.cpp
     client.cpp
     clientprivate.cpp
+    facebookpage.cpp
     token.cpp
 )
 
@@ -64,33 +62,14 @@ set(${PROJECT_NAME}_sources
     ${${PROJECT_NAME}_pri_sources}
 )
 
-QT4_WRAP_CPP(${PROJECT_NAME}_headers_moc ${${PROJECT_NAME}_headers})
-
-# Includes
-# ---------------
-
-# Pre-linkage Qt
-# ---------------
-INCLUDE(${QT_USE_FILE})
-ADD_DEFINITIONS(${QT_DEFINITIONS})
-
-message("QJSON_INCLUDE_DIR")
-message(${QJSON_INCLUDE_DIR})
-include_directories(${QJSON_INCLUDE_DIR})
-
-# Linked Libraries
-# ---------------
-message("QT_LIBRARIES")
-message(${QT_LIBRARIES})
-
-message("QJSON_LIBRARIES")
-message(${QJSON_LIBRARIES})
+QT5_WRAP_CPP(${PROJECT_NAME}_headers_moc ${${PROJECT_NAME}_headers})
 
 # Create the library
 # ---------------
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_headers} ${${PROJECT_NAME}_headers_moc} ${${PROJECT_NAME}_sources})
 
-target_link_libraries(${PROJECT_NAME} twirl qjson ${QT_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} twirl)
+qt5_use_modules(${PROJECT_NAME} Core Network WebKit WebKitWidgets)
 
 # Install
 # ---------------

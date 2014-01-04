@@ -25,20 +25,16 @@ Token Client::acquireToken(const App & app, const QStringList & permissions) {
     return d_ptr->acquireToken(app, permissions);
 }
 
-QVariantMap Client::get(const QString & object) {
-    return d_ptr->get(object);
+QJsonDocument Client::get(const QString & object, const QMap<QString,QString> & params) {
+    return d_ptr->get(object, params);
 }
 
-QVariantMap Client::post(const QString & object, const QVariantMap & data) {
-    return d_ptr->post(object, data);
+QJsonDocument Client::post(const QString & object, const QMap<QString,QString> & params, const QByteArray & data) {
+    return d_ptr->post(object, params, data);
 }
 
-QVariantMap Client::post(const QString & object, const QByteArray & data) {
-    return d_ptr->post(object, data);
-}
-
-QVariantMap Client::del(const QString & object) {
-    return d_ptr->del(object);
+QJsonDocument Client::del(const QString & object, const QMap<QString,QString> & params) {
+    return d_ptr->del(object, params);
 }
 
 const Token & Client::token() const {
@@ -47,6 +43,10 @@ const Token & Client::token() const {
 
 void Client::setToken(const Token & token) {
     d_ptr->token = token;
+}
+
+void Client::resetToken() {
+    d_ptr->token.clear();
 }
 
 bool Client::load(twirl::Session & session) {
